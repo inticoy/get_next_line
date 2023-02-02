@@ -1,0 +1,58 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: gyoon <gyoon@student.42.fr>                +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/10/10 15:06:44 by gyoon             #+#    #+#             */
+/*   Updated: 2022/10/28 20:26:34 by gyoon            ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "get_next_line.h"
+
+static t_string	init_string(void)
+{
+	t_string	s;
+
+	s.str = 0;
+	s.len = 0;
+	s.size = 0;
+	return (s);
+}
+
+static int	read_buffer(int fd, t_buffer *b)
+{
+	b->len = read(fd, b->buf, BUFFER_SIZE);
+	if (b->len > 0)
+		return (1);
+	else
+		return (0);
+}
+
+// buffer.idx != 0 means there is sth left in buffer 
+//		-> don't execute read_buffer(), break.
+// read_buffer() == 0 means error, so break.
+// if update_line makes error, don't execute update_buffer(), break.
+// if last char of line.str is \n, it means already read whole line.
+// if buffer.idx != 0, it means there is sth left in buffer.
+
+char	*get_next_line(int fd)
+{
+	static t_buffer	buffer;
+	t_string		line;
+
+	line = init_string();
+	while (1)
+	{
+		if (!buffer.idx && !read_buffer(fd, &buffer))
+			break ;
+		if (!update_line(&line, buffer) || !update_buffer(&buffer))
+			break ;
+		if (line.str[line.len - 1] == '\n' || buffer.idx)
+			break ;
+	}
+	line = optimize_string(line);
+	return (line.str);
+}
